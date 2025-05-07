@@ -21,10 +21,13 @@ function updateRevealCount() {
 
 function closeZoom() {
   if (zoomedClone) {
+    zoomedClone.classList.remove("zoomed");
     zoomedClone.remove();
     zoomedClone = null;
   }
   document.getElementById("overlay").style.display = "none";
+  document.body.classList.remove("no-scroll");  // disables scroll lock
+
 }
 
 function createCard(cardNum) {
@@ -43,19 +46,13 @@ function createCard(cardNum) {
   img.onload = () => updateRevealCount();
 
   img.addEventListener("click", (e) => {
+    e.preventDefault();
     e.stopPropagation();
     closeZoom();
+  
 
     zoomedClone = img.cloneNode(true);
     zoomedClone.classList.add("zoomed");
-    zoomedClone.style.position = "fixed";
-    zoomedClone.style.top = "50%";
-    zoomedClone.style.left = "50%";
-    zoomedClone.style.transform = "translate(-50%, -50%)";
-    zoomedClone.style.height = "90vh";
-    zoomedClone.style.maxWidth = "90vw";
-    zoomedClone.style.zIndex = "1000";
-    zoomedClone.style.cursor = "zoom-out";
     zoomedClone.addEventListener("click", (e) => {
       e.stopPropagation();
       closeZoom();
@@ -63,6 +60,7 @@ function createCard(cardNum) {
 
     document.body.appendChild(zoomedClone);
     document.getElementById("overlay").style.display = "block";
+    document.body.classList.add("no-scroll");  // enables scroll lock
   });
 
   const container = document.createElement("div");
@@ -89,7 +87,7 @@ function createBonusCard(index) {
   img.onload = () => {
     const container = document.createElement("div");
     container.classList.add("card-container");
-    container.appendChild(img); // No label
+    container.appendChild(img);
     bonusGrid.appendChild(container);
   };
 
@@ -98,41 +96,36 @@ function createBonusCard(index) {
   };
 
   img.addEventListener("click", (e) => {
+    e.preventDefault();           
     e.stopPropagation();
     closeZoom();
+  
 
-    const zoomed = img.cloneNode(true);
-    zoomed.classList.add("zoomed");
-    zoomed.style.position = "fixed";
-    zoomed.style.top = "50%";
-    zoomed.style.left = "50%";
-    zoomed.style.transform = "translate(-50%, -50%)";
-    zoomed.style.height = "90vh";
-    zoomed.style.maxWidth = "90vw";
-    zoomed.style.zIndex = "1000";
-    zoomed.style.cursor = "zoom-out";
-    zoomed.addEventListener("click", (e) => {
+    zoomedClone = img.cloneNode(true);
+    zoomedClone.classList.add("zoomed");
+    zoomedClone.addEventListener("click", (e) => {
       e.stopPropagation();
       closeZoom();
     });
 
-    document.body.appendChild(zoomed);
+    document.body.appendChild(zoomedClone);
     document.getElementById("overlay").style.display = "block";
+    document.body.classList.add("no-scroll");  // enables scroll lock
   });
 }
 
-// Load main set
+// Load main cards
 for (let i = 1; i <= totalCards; i++) {
   const cardNum = i.toString().padStart(3, '0');
   createCard(cardNum);
 }
 
-// Load up to 30 bonus cards if they exist
+// Load up to 30 bonus cards
 for (let i = 1; i <= 30; i++) {
   createBonusCard(i);
 }
 
-// Toggle button logic
+// Toggle revealed/all
 toggleBtn.addEventListener("click", () => {
   showOnlyRevealed = !showOnlyRevealed;
   toggleBtn.textContent = showOnlyRevealed ? "Show All Cards" : "Show Only Revealed Cards";
@@ -146,10 +139,10 @@ toggleBtn.addEventListener("click", () => {
   updateRevealCount();
 });
 
-// Global click to close zoom
+// Global click closes zoom
 document.addEventListener("click", () => closeZoom());
 
-// Default to 'only revealed' mode
+// Start in "only revealed" mode
 window.addEventListener("load", () => {
   toggleBtn.click();
 });
