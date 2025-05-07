@@ -1,0 +1,145 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    background-color: #e3caa8;
+    background-image: url("parchment.png");
+    background-repeat: repeat;
+    background-size: 600px;
+    background-blend-mode: multiply;
+    color: #771517;
+  }
+  
+  header {
+    background-color: #771517;
+    padding: 1rem;
+    text-align: center;
+  }
+  
+  #logo {
+    max-height: 100px;
+    width: auto;
+  }
+  
+  main {
+    padding: 1rem;
+    max-width: 1600px;
+    margin: 0 auto;
+    background-color: rgba(165, 148, 124, 0.7);
+    border: 2px solid #d3ba84;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+  }
+  
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 6px;
+    justify-items: center;
+  }
+  
+  .card {
+    width: 100%;
+    max-width: 200px;
+    aspect-ratio: 2.5 / 3.5;
+    object-fit: cover;
+    border: none;
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    cursor: zoom-in;
+  }
+  
+  /* Zoomed-in card style */
+  .card.zoomed {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: auto;
+    height: 90vh;
+    max-width: 90vw;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    border: none;
+    background: none;
+    border-radius: 12px;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
+    cursor: zoom-out;
+  }
+
+  .card-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .card-label {
+    font-size: 0.65rem;
+    margin-top: 2px;
+    color: #771517;
+  }
+  
+
+  #toggleRevealed {
+    background-color: #771517;
+    color: #fff;
+    border: 2px solid #d3ba84;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    margin: 1rem auto;
+    display: block;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  #toggleRevealed:hover {
+    background-color: #a01c1c;
+  }
+
+  
+  #revealCounter {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-top: -0.5rem;
+    margin-bottom: 1rem;
+    color: #771517;
+    font-weight: bold;
+  }
+
+  #overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 900;
+    display: none;
+  }
+  
+  
+  
+  /* Tablet optimization */
+  @media (max-width: 900px) {
+    .card-grid {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 5px;
+    }
+  
+    .card {
+      max-width: 160px;
+    }
+  }
+  
+  /* Mobile and small tablet optimization */
+  @media (max-width: 600px) {
+    .card-grid {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 4px;
+    }
+  
+    .card {
+      max-width: 140px;
+    }
+  }
+  
