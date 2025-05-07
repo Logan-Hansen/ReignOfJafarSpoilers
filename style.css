@@ -43,6 +43,18 @@ main {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
 }
 
+#loading {
+  text-align: center;
+  font-size: 1.2rem;
+  padding: 1rem;
+  font-weight: bold;
+  color: #771517;
+}
+.hidden {
+  display: none;
+}
+
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
