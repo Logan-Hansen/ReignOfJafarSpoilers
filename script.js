@@ -5,6 +5,7 @@ const toggleBtn = document.getElementById("toggleRevealed");
 const revealCounter = document.getElementById("revealCounter");
 let showOnlyRevealed = false;
 let zoomedClone = null;
+let loadedCount = 0;
 
 function updateRevealCount() {
   let revealed = 0;
@@ -19,15 +20,21 @@ function updateRevealCount() {
   revealCounter.textContent = `Revealed: ${revealed} / ${totalCards} (${percent}%)`;
 }
 
+function incrementLoaded() {
+  loadedCount++;
+  if (loadedCount === totalCards) {
+    updateRevealCount();
+  }
+}
+
 function closeZoom() {
   if (zoomedClone) {
     zoomedClone.classList.remove("zoomed");
     zoomedClone.remove();
     zoomedClone = null;
   }
+  document.body.classList.remove("no-scroll");
   document.getElementById("overlay").style.display = "none";
-  document.body.classList.remove("no-scroll");  // disables scroll lock
-
 }
 
 function createCard(cardNum) {
@@ -40,16 +47,17 @@ function createCard(cardNum) {
   img.onerror = () => {
     img.src = "LorcanaCardBack.png";
     img.dataset.unrevealed = "true";
-    updateRevealCount();
+    incrementLoaded();
   };
 
-  img.onload = () => updateRevealCount();
+  img.onload = () => {
+    incrementLoaded();
+  };
 
   img.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
     closeZoom();
-  
 
     zoomedClone = img.cloneNode(true);
     zoomedClone.classList.add("zoomed");
@@ -59,8 +67,8 @@ function createCard(cardNum) {
     });
 
     document.body.appendChild(zoomedClone);
+    document.body.classList.add("no-scroll");
     document.getElementById("overlay").style.display = "block";
-    document.body.classList.add("no-scroll");  // enables scroll lock
   });
 
   const container = document.createElement("div");
@@ -96,10 +104,9 @@ function createBonusCard(index) {
   };
 
   img.addEventListener("click", (e) => {
-    e.preventDefault();           
+    e.preventDefault();
     e.stopPropagation();
     closeZoom();
-  
 
     zoomedClone = img.cloneNode(true);
     zoomedClone.classList.add("zoomed");
@@ -109,8 +116,8 @@ function createBonusCard(index) {
     });
 
     document.body.appendChild(zoomedClone);
+    document.body.classList.add("no-scroll");
     document.getElementById("overlay").style.display = "block";
-    document.body.classList.add("no-scroll");  // enables scroll lock
   });
 }
 
