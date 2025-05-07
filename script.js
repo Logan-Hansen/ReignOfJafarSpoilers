@@ -6,6 +6,7 @@ const revealCounter = document.getElementById("revealCounter");
 const loadingIndicator = document.getElementById("loading");
 let showOnlyRevealed = false;
 let zoomedClone = null;
+let loadedCount = 0;
 
 function updateRevealCount() {
   let revealed = 0;
@@ -18,6 +19,14 @@ function updateRevealCount() {
   }
   const percent = ((revealed / totalCards) * 100).toFixed(1);
   revealCounter.textContent = `Revealed: ${revealed} / ${totalCards} (${percent}%)`;
+}
+
+function incrementLoaded() {
+  loadedCount++;
+  if (loadedCount === totalCards) {
+    updateRevealCount();
+    loadingIndicator.classList.add("hidden");
+  }
 }
 
 function closeZoom() {
@@ -40,6 +49,11 @@ function createCard(cardNum) {
   img.onerror = () => {
     img.src = "LorcanaCardBack.png";
     img.dataset.unrevealed = "true";
+    incrementLoaded();
+  };
+
+  img.onload = () => {
+    incrementLoaded();
   };
 
   img.addEventListener("click", (e) => {
@@ -114,10 +128,6 @@ for (let i = 1; i <= totalCards; i++) {
   const cardNum = i.toString().padStart(3, '0');
   createCard(cardNum);
 }
-
-// Once all cards are added, update count and hide loading
-updateRevealCount();
-loadingIndicator.classList.add("hidden");
 
 // Load up to 30 bonus cards
 for (let i = 1; i <= 30; i++) {
