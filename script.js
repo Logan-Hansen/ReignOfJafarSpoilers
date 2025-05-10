@@ -2,87 +2,80 @@ const totalCards = 204;
 const grid = document.getElementById("cardGrid");
 const bonusGrid = document.getElementById("bonusGrid");
 const toggleBtn = document.getElementById("toggleRevealed");
-const revealCounter = document.getElementById("revealCounter");
 const loadingIndicator = document.getElementById("loading");
-let showOnlyRevealed = false;
+const overlay = document.getElementById("overlay");
+
+let showMissing = false;
 let zoomedClone = null;
-let loadedCount = 0;
+let cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // daily version
 
-function updateRevealCount() {
-  let revealed = 0;
-  for (let i = 1; i <= totalCards; i++) {
-    const cardNum = i.toString().padStart(3, '0');
-    const card = document.querySelector(`.card[data-card-num="${cardNum}"]`);
-    if (card && !card.src.includes("LorcanaCardBack.png")) {
-      revealed++;
-    }
-  }
-  const percent = ((revealed / totalCards) * 100).toFixed(1);
-  revealCounter.textContent = `Revealed: ${revealed} / ${totalCards} (${percent}%)`;
-}
-
-function incrementLoaded() {
-  loadedCount++;
-  if (loadedCount === totalCards) {
-    updateRevealCount();
-    loadingIndicator.classList.add("hidden");
-  }
-}
+// "Refresh Card Images" button
+const refreshBtn = document.createElement("button");
+refreshBtn.textContent = "Refresh Card Images";
+refreshBtn.id = "refreshImagesBtn";
+refreshBtn.title = "Force all card images to reload in case any were updated";
+refreshBtn.style.cssText = "background-color:#771517;color:#fff;border:2px solid #d3ba84;padding:0.5rem 1rem;margin:1rem auto;display:block;border-radius:8px;cursor:pointer;";
+refreshBtn.addEventListener("click", () => {
+  cacheBuster = Date.now(); // force refresh
+  reloadCards();
+});
+document.querySelector("main").insertBefore(refreshBtn, grid);
 
 function closeZoom() {
   if (zoomedClone) {
-    zoomedClone.classList.remove("zoomed");
     zoomedClone.remove();
     zoomedClone = null;
   }
   document.body.classList.remove("no-scroll");
-  document.getElementById("overlay").style.display = "none";
+  overlay.style.display = "none";
 }
 
 function createCard(cardNum) {
   const img = document.createElement("img");
   img.dataset.cardNum = cardNum;
-  img.src = `cards/${cardNum}.png`;
+  img.loading = "lazy";
+  img.src = `cards/${cardNum}.png?v=${cacheBuster}`;
   img.alt = `Card ${cardNum}`;
   img.classList.add("card");
 
+  const container = document.createElement("div");
+  container.classList.add("card-container");
+  container.appendChild(img);
+
+  const label = document.createElement("div");
+  label.classList.add("card-label");
+  label.textContent = cardNum;
+  container.appendChild(label);
+
   img.onerror = () => {
     img.src = "LorcanaCardBack.png";
-    img.dataset.unrevealed = "true";
-    incrementLoaded();
+    container.dataset.unrevealed = "true";
+    if (!showMissing) container.style.display = "none";
   };
 
   img.onload = () => {
-    incrementLoaded();
+    if (img.src.includes("LorcanaCardBack.png") && !showMissing) {
+      container.style.display = "none";
+    }
   };
 
-  img.addEventListener("click", (e) => {
-    e.preventDefault();
+  img.addEventListener("click", e => {
     e.stopPropagation();
     closeZoom();
 
     zoomedClone = img.cloneNode(true);
     zoomedClone.classList.add("zoomed");
-    zoomedClone.addEventListener("click", (e) => {
+    zoomedClone.addEventListener("click", e => {
       e.stopPropagation();
       closeZoom();
     });
 
     document.body.appendChild(zoomedClone);
     document.body.classList.add("no-scroll");
-    document.getElementById("overlay").style.display = "block";
+    overlay.style.display = "block";
   });
 
-  const container = document.createElement("div");
-  container.classList.add("card-container");
-
-  const label = document.createElement("div");
-  label.classList.add("card-label");
-  label.textContent = cardNum;
-
-  container.appendChild(img);
-  container.appendChild(label);
-  grid.appendChild(container);
+  return container;
 }
 
 function createBonusCard(index) {
@@ -90,68 +83,80 @@ function createBonusCard(index) {
   const filename = `bonus_${id}.png`;
 
   const img = document.createElement("img");
-  img.src = `cards/bonus/${filename}`;
+  img.loading = "lazy";
+  img.src = `cards/bonus/${filename}?v=${cacheBuster}`;
   img.alt = "Bonus Card";
   img.classList.add("card");
 
-  img.onload = () => {
-    const container = document.createElement("div");
-    container.classList.add("card-container");
-    container.appendChild(img);
-    bonusGrid.appendChild(container);
-  };
+  const container = document.createElement("div");
+  container.classList.add("card-container");
+  container.appendChild(img);
+
+  const label = document.createElement("div");
+  label.classList.add("card-label");
+  label.textContent = `Bonus ${id}`;
+  container.appendChild(label);
+
+  bonusGrid.appendChild(container);
 
   img.onerror = () => {
-    img.remove();
+    container.remove();
   };
 
-  img.addEventListener("click", (e) => {
-    e.preventDefault();
+  img.addEventListener("click", e => {
     e.stopPropagation();
     closeZoom();
 
     zoomedClone = img.cloneNode(true);
     zoomedClone.classList.add("zoomed");
-    zoomedClone.addEventListener("click", (e) => {
+    zoomedClone.addEventListener("click", e => {
       e.stopPropagation();
       closeZoom();
     });
 
     document.body.appendChild(zoomedClone);
     document.body.classList.add("no-scroll");
-    document.getElementById("overlay").style.display = "block";
+    overlay.style.display = "block";
   });
 }
 
-// Load main cards
-for (let i = 1; i <= totalCards; i++) {
-  const cardNum = i.toString().padStart(3, '0');
-  createCard(cardNum);
+function reloadCards() {
+  grid.innerHTML = "";
+  loadingIndicator.classList.remove("hidden");
+
+  const frag = document.createDocumentFragment();
+  for (let i = 1; i <= totalCards; i++) {
+    const cardNum = i.toString().padStart(3, '0');
+    frag.appendChild(createCard(cardNum));
+  }
+
+  grid.appendChild(frag);
+  loadingIndicator.classList.add("hidden");
 }
 
-// Load up to 30 bonus cards
-for (let i = 1; i <= 30; i++) {
-  createBonusCard(i);
-}
-
-// Toggle revealed/all
-toggleBtn.addEventListener("click", () => {
-  showOnlyRevealed = !showOnlyRevealed;
-  toggleBtn.textContent = showOnlyRevealed ? "Show All Cards" : "Show Only Revealed Cards";
+function toggleMissing() {
+  showMissing = !showMissing;
+  toggleBtn.textContent = showMissing ? "Hide Missing Card Slots" : "Show Missing Card Slots";
 
   document.querySelectorAll(".card-container").forEach(container => {
     const card = container.querySelector(".card");
     const isBack = card.src.includes("LorcanaCardBack.png");
-    container.style.display = (showOnlyRevealed && isBack) ? "none" : "flex";
+    container.style.display = (!showMissing && isBack) ? "none" : "flex";
   });
+}
 
-  updateRevealCount();
-});
+// Initial load
+reloadCards();
+for (let i = 1; i <= 30; i++) {
+  createBonusCard(i);
+}
+
+// Toggle button
+toggleBtn.textContent = "Show Missing Card Slots";
+toggleBtn.addEventListener("click", toggleMissing);
 
 // Global click closes zoom
-document.addEventListener("click", () => closeZoom());
+document.addEventListener("click", closeZoom);
 
 // Start in "only revealed" mode
-window.addEventListener("load", () => {
-  toggleBtn.click();
-});
+window.addEventListener("load", () => toggleBtn.click());
