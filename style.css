@@ -11,9 +11,8 @@ body {
 
 body.no-scroll {
   overflow: hidden;
-  position: fixed;
-  width: 100%;
 }
+
 
 html {
   scroll-behavior: smooth;
@@ -130,6 +129,7 @@ main {
 }
 
 #overlay {
+  pointer-events: auto;
   position: fixed;
   top: 0;
   left: 0;

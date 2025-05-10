@@ -32,18 +32,7 @@ refreshBtn.addEventListener("click", () => {
 });
 document.querySelector("main").insertBefore(refreshBtn, grid);
 
-function closeZoom() {
-  if (zoomedClone) {
-    zoomedClone.remove();
-    zoomedClone = null;
-  }
-  document.body.classList.remove("no-scroll", "show-controls");
-  overlay.style.display = "none";
-  overlay.removeEventListener("touchmove", preventTouchScroll);
-  overlay.removeEventListener("touchstart", handleTouchStart);
-  overlay.removeEventListener("touchend", handleTouchEnd);
-  hideZoomNavigation();
-}
+
 
 function preventTouchScroll(e) {
   e.preventDefault();
@@ -78,36 +67,73 @@ function hideZoomNavigation() {
   nextBtn.style.display = "none";
 }
 
+let savedScrollY = 0;
+
 function zoomToCard(index) {
   const now = Date.now();
   if (now - lastZoomTime < zoomCooldown) return;
   lastZoomTime = now;
   if (index < 0 || index >= revealedCards.length) return;
+
+  // Prevent zooming the same card twice
+  if (zoomedClone && currentZoomIndex === index) return;
+
+  savedScrollY = window.scrollY;
   closeZoom();
 
   const img = revealedCards[index].querySelector(".card");
   zoomedClone = img.cloneNode(true);
   zoomedClone.classList.add("zoomed");
-  zoomedClone.addEventListener("click", e => {
-    e.stopPropagation();
+
+  zoomedClone.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopImmediatePropagation();
     closeZoom();
   });
 
-  document.body.appendChild(zoomedClone);
-  document.body.classList.add("no-scroll", "show-controls");
+  overlay.appendChild(zoomedClone);
   overlay.style.display = "block";
+
+  document.body.classList.add("no-scroll", "show-controls");
+
+  // Swipe support for both overlay and zoomed image
   overlay.addEventListener("touchmove", preventTouchScroll, { passive: false });
-  overlay.addEventListener("touchstart", handleTouchStart);
-  overlay.addEventListener("touchend", handleTouchEnd);
+  overlay.addEventListener("touchstart", handleTouchStart, { passive: false });
+  overlay.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+  zoomedClone.addEventListener("touchstart", handleTouchStart, { passive: false });
+  zoomedClone.addEventListener("touchend", handleTouchEnd, { passive: false });
+
   currentZoomIndex = index;
   showZoomNavigation();
+}
+
+
+
+
+
+function closeZoom() {
+  if (zoomedClone) {
+    zoomedClone.remove();
+    zoomedClone = null;
+  }
+
+  document.body.classList.remove("no-scroll", "show-controls");
+  overlay.style.display = "none";
+  overlay.removeEventListener("touchmove", preventTouchScroll);
+  overlay.removeEventListener("touchstart", handleTouchStart);
+  overlay.removeEventListener("touchend", handleTouchEnd);
+
+  // Restore scroll position (make sure savedScrollY is declared globally)
+  window.scrollTo({ top: savedScrollY });
+
+  hideZoomNavigation();
 }
 
 function createCard(cardNum, revealed = true) {
   const img = document.createElement("img");
   img.dataset.cardNum = cardNum;
   img.loading = "lazy";
-  img.src = revealed ? `cards/${cardNum}.png?v=${cacheBuster}` : "LorcanaCardBack.png";
   img.alt = `Card ${cardNum}`;
   img.classList.add("card");
 
@@ -128,6 +154,18 @@ function createCard(cardNum, revealed = true) {
     revealedCards.push(container);
   }
 
+  // Load high-res first, fall back to lowRes
+  const highResSrc = `cards/${cardNum}.png?v=${cacheBuster}`;
+  const lowResSrc = `cards/lowRes/${cardNum}.png?v=${cacheBuster}`;
+
+  img.src = revealed ? highResSrc : "LorcanaCardBack.png";
+  if (revealed) {
+    img.onerror = () => {
+      img.src = lowResSrc;
+      img.onerror = null; // prevent infinite fallback loop
+    };
+  }
+
   img.addEventListener("click", e => {
     e.stopPropagation();
     const index = revealedCards.findIndex(c => c.contains(img));
@@ -138,6 +176,7 @@ function createCard(cardNum, revealed = true) {
 
   return container;
 }
+
 
 function createBonusCard(bonusNum) {
   const filename = `bonus_${bonusNum}.png`;
@@ -226,7 +265,12 @@ document.addEventListener("keydown", e => {
   }
 });
 
-document.addEventListener("click", closeZoom);
+document.addEventListener("click", (e) => {
+  if (zoomedClone && !zoomedClone.contains(e.target)) {
+    closeZoom();
+  }
+});
+
 
 fetch("manifest.json")
   .then(res => res.json())
