@@ -1,4 +1,4 @@
-// Full updated script with all functionality restored and improved mobile behavior
+// Full updated script with swipe support and faded navigation buttons
 const grid = document.getElementById("cardGrid");
 const bonusGrid = document.getElementById("bonusGrid");
 const toggleBtn = document.getElementById("toggleRevealed");
@@ -18,6 +18,8 @@ const zoomCooldown = 200;
 
 let manifest = { revealed: [], bonus: [] };
 const totalCards = 204;
+let touchStartX = 0;
+let touchEndX = 0;
 
 const refreshBtn = document.createElement("button");
 refreshBtn.textContent = "Refresh Card Images";
@@ -38,6 +40,8 @@ function closeZoom() {
   document.body.classList.remove("no-scroll", "show-controls");
   overlay.style.display = "none";
   overlay.removeEventListener("touchmove", preventTouchScroll);
+  overlay.removeEventListener("touchstart", handleTouchStart);
+  overlay.removeEventListener("touchend", handleTouchEnd);
   hideZoomNavigation();
 }
 
@@ -45,18 +49,28 @@ function preventTouchScroll(e) {
   e.preventDefault();
 }
 
-function showZoomNavigation() {
-  if (currentZoomIndex > 0) {
-    prevBtn.style.display = "flex";
-  } else {
-    prevBtn.style.display = "none";
-  }
+function handleTouchStart(e) {
+  touchStartX = e.changedTouches[0].screenX;
+}
 
-  if (currentZoomIndex < revealedCards.length - 1) {
-    nextBtn.style.display = "flex";
-  } else {
-    nextBtn.style.display = "none";
+function handleTouchEnd(e) {
+  touchEndX = e.changedTouches[0].screenX;
+  const diff = touchEndX - touchStartX;
+  if (Math.abs(diff) > 50) {
+    if (diff < 0) {
+      zoomToCard(currentZoomIndex + 1);
+    } else {
+      zoomToCard(currentZoomIndex - 1);
+    }
   }
+}
+
+function showZoomNavigation() {
+  prevBtn.style.display = "flex";
+  nextBtn.style.display = "flex";
+
+  prevBtn.style.opacity = currentZoomIndex > 0 ? "1" : "0.3";
+  nextBtn.style.opacity = currentZoomIndex < revealedCards.length - 1 ? "1" : "0.3";
 }
 
 function hideZoomNavigation() {
@@ -83,6 +97,8 @@ function zoomToCard(index) {
   document.body.classList.add("no-scroll", "show-controls");
   overlay.style.display = "block";
   overlay.addEventListener("touchmove", preventTouchScroll, { passive: false });
+  overlay.addEventListener("touchstart", handleTouchStart);
+  overlay.addEventListener("touchend", handleTouchEnd);
   currentZoomIndex = index;
   showZoomNavigation();
 }
