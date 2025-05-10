@@ -1,13 +1,23 @@
-const totalCards = 204;
 const grid = document.getElementById("cardGrid");
 const bonusGrid = document.getElementById("bonusGrid");
 const toggleBtn = document.getElementById("toggleRevealed");
 const loadingIndicator = document.getElementById("loading");
 const overlay = document.getElementById("overlay");
 
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+
 let showMissing = false;
 let zoomedClone = null;
-let cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24)); // daily version
+let cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+let revealedCards = [];
+let currentZoomIndex = -1;
+let lastZoomTime = 0;
+const zoomCooldown = 200; // milliseconds between allowed transitions
+
+
+let manifest = { revealed: [], bonus: [] };
+const totalCards = 204; // still used to detect missing slots
 
 // "Refresh Card Images" button
 const refreshBtn = document.createElement("button");
@@ -16,8 +26,8 @@ refreshBtn.id = "refreshImagesBtn";
 refreshBtn.title = "Force all card images to reload in case any were updated";
 refreshBtn.style.cssText = "background-color:#771517;color:#fff;border:2px solid #d3ba84;padding:0.5rem 1rem;margin:1rem auto;display:block;border-radius:8px;cursor:pointer;";
 refreshBtn.addEventListener("click", () => {
-  cacheBuster = Date.now(); // force refresh
-  reloadCards();
+  cacheBuster = Date.now();
+  loadFromManifest();
 });
 document.querySelector("main").insertBefore(refreshBtn, grid);
 
@@ -28,13 +38,58 @@ function closeZoom() {
   }
   document.body.classList.remove("no-scroll");
   overlay.style.display = "none";
+  hideZoomNavigation();
 }
 
-function createCard(cardNum) {
+function showZoomNavigation() {
+  if (currentZoomIndex > 0) {
+    prevBtn.style.display = "flex";
+  } else {
+    prevBtn.style.display = "none";
+  }
+
+  if (currentZoomIndex < revealedCards.length - 1) {
+    nextBtn.style.display = "flex";
+  } else {
+    nextBtn.style.display = "none";
+  }
+
+}
+
+function hideZoomNavigation() {
+  prevBtn.style.display = "none";
+  nextBtn.style.display = "none";
+}
+
+function zoomToCard(index) {
+  const now = Date.now();
+  if (now - lastZoomTime < zoomCooldown) return;
+  lastZoomTime = now;
+  if (index < 0 || index >= revealedCards.length) return;
+  closeZoom();
+
+  const img = revealedCards[index].querySelector(".card");
+  zoomedClone = img.cloneNode(true);
+  zoomedClone.classList.add("zoomed");
+  zoomedClone.addEventListener("click", e => {
+    e.stopPropagation();
+    closeZoom();
+  });
+
+  document.body.appendChild(zoomedClone);
+  document.body.classList.add("no-scroll");
+  overlay.style.display = "block";
+  currentZoomIndex = index;
+  showZoomNavigation();
+}
+
+function createCard(cardNum, revealed = true) {
   const img = document.createElement("img");
   img.dataset.cardNum = cardNum;
   img.loading = "lazy";
-  img.src = `cards/${cardNum}.png?v=${cacheBuster}`;
+  img.src = revealed
+    ? `cards/${cardNum}.png?v=${cacheBuster}`
+    : "LorcanaCardBack.png";
   img.alt = `Card ${cardNum}`;
   img.classList.add("card");
 
@@ -47,40 +102,27 @@ function createCard(cardNum) {
   label.textContent = cardNum;
   container.appendChild(label);
 
-  img.onerror = () => {
-    img.src = "LorcanaCardBack.png";
-    container.dataset.unrevealed = "true";
-    if (!showMissing) container.style.display = "none";
-  };
+  if (!revealed && !showMissing) {
+    container.style.display = "none";
+  }
 
-  img.onload = () => {
-    if (img.src.includes("LorcanaCardBack.png") && !showMissing) {
-      container.style.display = "none";
-    }
-  };
+  if (revealed) {
+    revealedCards.push(container);
+  }
 
   img.addEventListener("click", e => {
     e.stopPropagation();
-    closeZoom();
-
-    zoomedClone = img.cloneNode(true);
-    zoomedClone.classList.add("zoomed");
-    zoomedClone.addEventListener("click", e => {
-      e.stopPropagation();
-      closeZoom();
-    });
-
-    document.body.appendChild(zoomedClone);
-    document.body.classList.add("no-scroll");
-    overlay.style.display = "block";
+    const index = revealedCards.findIndex(c => c.contains(img));
+    if (index !== -1) {
+      zoomToCard(index);
+    }
   });
 
   return container;
 }
 
-function createBonusCard(index) {
-  const id = index.toString().padStart(2, '0');
-  const filename = `bonus_${id}.png`;
+function createBonusCard(bonusNum) {
+  const filename = `bonus_${bonusNum}.png`;
 
   const img = document.createElement("img");
   img.loading = "lazy";
@@ -93,6 +135,7 @@ function createBonusCard(index) {
   container.appendChild(img);
 
   bonusGrid.appendChild(container);
+  revealedCards.push(container); // 🔁 Add to navigation list
 
   img.onerror = () => {
     container.remove();
@@ -100,38 +143,45 @@ function createBonusCard(index) {
 
   img.addEventListener("click", e => {
     e.stopPropagation();
-    closeZoom();
-
-    zoomedClone = img.cloneNode(true);
-    zoomedClone.classList.add("zoomed");
-    zoomedClone.addEventListener("click", e => {
-      e.stopPropagation();
-      closeZoom();
-    });
-
-    document.body.appendChild(zoomedClone);
-    document.body.classList.add("no-scroll");
-    overlay.style.display = "block";
+    const index = revealedCards.findIndex(c => c.contains(img));
+    if (index !== -1) {
+      zoomToCard(index);
+    }
   });
 }
 
-function reloadCards() {
+
+function loadFromManifest() {
   grid.innerHTML = "";
+  revealedCards = [];
   loadingIndicator.classList.remove("hidden");
 
   const frag = document.createDocumentFragment();
+
+  const revealedSet = new Set(manifest.revealed);
   for (let i = 1; i <= totalCards; i++) {
-    const cardNum = i.toString().padStart(3, '0');
-    frag.appendChild(createCard(cardNum));
+    const cardNum = i.toString().padStart(3, "0");
+    const isRevealed = revealedSet.has(cardNum);
+    const container = createCard(cardNum, isRevealed);
+    frag.appendChild(container);
   }
 
   grid.appendChild(frag);
   loadingIndicator.classList.add("hidden");
 }
 
+function loadBonusCards() {
+  bonusGrid.innerHTML = "";
+  manifest.bonus.forEach(bonusNum => {
+    createBonusCard(bonusNum);
+  });
+}
+
 function toggleMissing() {
   showMissing = !showMissing;
-  toggleBtn.textContent = showMissing ? "Hide Missing Card Slots" : "Show Missing Card Slots";
+  toggleBtn.textContent = showMissing
+    ? "Hide Missing Card Slots"
+    : "Show Missing Card Slots";
 
   document.querySelectorAll(".card-container").forEach(container => {
     const card = container.querySelector(".card");
@@ -140,18 +190,42 @@ function toggleMissing() {
   });
 }
 
-// Initial load
-reloadCards();
-for (let i = 1; i <= 30; i++) {
-  createBonusCard(i);
-}
-
 // Toggle button
 toggleBtn.textContent = "Show Missing Card Slots";
 toggleBtn.addEventListener("click", toggleMissing);
 
+// Zoom nav buttons
+prevBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  zoomToCard(currentZoomIndex - 1);
+});
+
+nextBtn.addEventListener("click", e => {
+  e.stopPropagation();
+  zoomToCard(currentZoomIndex + 1);
+});
+
+// Arrow key navigation
+document.addEventListener("keydown", e => {
+  if (!zoomedClone) return;
+  if (e.key === "ArrowLeft") {
+    zoomToCard(currentZoomIndex - 1);
+  } else if (e.key === "ArrowRight") {
+    zoomToCard(currentZoomIndex + 1);
+  } else if (e.key === "Escape") {
+    closeZoom();
+  }
+});
+
 // Global click closes zoom
 document.addEventListener("click", closeZoom);
 
-// Start in "only revealed" mode
-window.addEventListener("load", () => toggleBtn.click());
+// Load manifest and start
+fetch("manifest.json")
+  .then(res => res.json())
+  .then(data => {
+    manifest = data;
+    loadFromManifest();
+    loadBonusCards();
+    toggleBtn.click(); // Default to revealed-only mode
+  });

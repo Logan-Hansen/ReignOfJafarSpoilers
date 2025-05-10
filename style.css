@@ -17,7 +17,6 @@ html {
   scroll-behavior: smooth;
 }
 
-
 header {
   background-color: #771517;
   padding: 1rem;
@@ -36,8 +35,6 @@ h2 {
   padding-top: 1rem;
 }
 
-
-
 main {
   padding: 1rem;
   max-width: 1600px;
@@ -55,10 +52,10 @@ main {
   font-weight: bold;
   color: #771517;
 }
+
 .hidden {
   display: none;
 }
-
 
 .card-grid {
   display: grid;
@@ -77,21 +74,19 @@ main {
   cursor: zoom-in;
 }
 
-
 .card.zoomed {
   position: fixed;
   top: 50%;
   left: 50%;
   width: 600px;
   height: 840px;
-  /* Maintains 2.5:3.5 card aspect ratio */
   transform: translate(-50%, -50%);
   z-index: 1000;
   object-fit: cover;
   border: none;
   background: none;
   border-radius: 12px;
-  background-color: rgba(0, 0, 0, 0.3); /* Match overlay */
+  background-color: rgba(0, 0, 0, 0.3);
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
   cursor: zoom-out;
   will-change: transform;
@@ -101,8 +96,6 @@ main {
   transform: scale(1.02);
 }
 
-
-
 .card-container {
   display: flex;
   flex-direction: column;
@@ -111,14 +104,11 @@ main {
   max-width: 200px;
 }
 
-
-
 .card-label {
   font-size: 0.65rem;
   margin-top: 2px;
   color: #771517;
 }
-
 
 #toggleRevealed {
   background-color: #771517;
@@ -155,9 +145,59 @@ main {
   justify-items: center;
 }
 
+.nav-button {
+  font-size: 2rem;
+  background: rgba(255, 255, 255, 0.8);
+  color: #771517;
+  border: 2px solid #d3ba84;
+  border-radius: 50%;
+  width: 48px;
+  height: 48px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  display: none;
+}
 
+#prevBtn {
+  left: 20px;
+}
 
-/* Tablet optimization */
+#nextBtn {
+  right: 20px;
+}
+
+.zoom-controls {
+  display: none;
+}
+
+/* When body.zoom-controls is active, show buttons */
+body.show-controls .zoom-controls {
+  display: flex;
+}
+
+@media (min-width: 701px) {
+  #prevBtn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1001;
+  }
+
+  #nextBtn {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1001;
+  }
+
+  .zoom-controls {
+    position: relative;
+    z-index: 1002;
+  }
+}
+
+/* Tablet layout */
 @media (max-width: 900px) {
   .card-grid {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -169,29 +209,46 @@ main {
   }
 }
 
-/* Mobile and small tablet optimization */
-@media (max-width: 600px) {
+/* Mobile layout */
+@media (max-width: 700px) {
   .card-grid {
-    grid-template-columns: repeat(3, 1fr); /* Force 3 per row */
-    gap: 2px; /* Reduce space between cards */
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
   }
 
   .card-container {
-    max-width: 100%; /* Ensure it fits within the new layout */
+    max-width: 100%;
   }
 
   .card {
-    height: auto; /* Let it resize proportionally if needed */
+    height: auto;
     max-height: 220px;
   }
-}
 
-
-/* Zoomed card size on mobile */
-@media (max-width: 700px) {
   .card.zoomed {
     width: 90vw;
-    height: calc(90vw * 1.4);
-    /* maintains card aspect ratio */
+    height: auto;
+    max-height: 90vh;
+    object-fit: contain;
+  }
+
+  .zoom-controls {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    z-index: 1002;
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    pointer-events: auto;
+  }
+
+  .nav-button {
+    position: static;
+    transform: none;
+    width: 60px;
+    height: 44px;
+    font-size: 1.5rem;
   }
 }
