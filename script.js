@@ -161,6 +161,7 @@ function createCard(cardNum) {
     img.src = path;
   } else {
     img.src = "LorcanaCardBack.png";
+    container.dataset.missing = "true";
   }
 
   img.addEventListener("click", (e) => {
@@ -217,18 +218,17 @@ function loadFromManifest() {
   loadingIndicator.classList.remove("hidden");
 
   const frag = document.createDocumentFragment();
-  const revealed = manifest.revealed;
 
-  const sortedKeys = Object.keys(revealed).sort(); // "001", "002", etc.
-
-  for (const cardNum of sortedKeys) {
-    const container = createCard(cardNum); // no need for isRevealed boolean
+  for (let i = 1; i <= totalCards; i++) {
+    const cardNum = i.toString().padStart(3, "0");
+    const container = createCard(cardNum);
     frag.appendChild(container);
   }
 
   grid.appendChild(frag);
   loadingIndicator.classList.add("hidden");
 }
+
 
 function loadBonusCards() {
   bonusGrid.innerHTML = "";
@@ -245,9 +245,8 @@ function toggleMissing() {
   showMissing = !showMissing;
   toggleBtn.textContent = showMissing ? "Hide Missing Card Slots" : "Show Missing Card Slots";
   document.querySelectorAll(".card-container").forEach(container => {
-    const card = container.querySelector(".card");
-    const isBack = card.src.includes("LorcanaCardBack.png");
-    container.style.display = (!showMissing && isBack) ? "none" : "flex";
+    const isMissing = container.dataset.missing === "true";
+    container.style.display = (!showMissing && isMissing) ? "none" : "flex";
   });
 }
 
