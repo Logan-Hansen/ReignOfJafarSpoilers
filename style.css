@@ -30,9 +30,10 @@ header {
 }
 
 h2 {
-  margin-left: 30px;
-  text-align: center;
+  text-align: left;
+  margin-left: 0.5rem;
 }
+
 
 main {
   padding: 1rem;
@@ -59,7 +60,7 @@ main {
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 6px;
+  gap: 4px;
   justify-items: center;
 }
 
@@ -87,6 +88,7 @@ main {
   border: none;
   background: none;
   border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.3); /* Match overlay */
   box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
   cursor: zoom-out;
 }
@@ -152,6 +154,15 @@ main {
   display: none;
 }
 
+#bonusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  justify-items: center;
+}
+
+
+
 /* Tablet optimization */
 @media (max-width: 900px) {
   .card-grid {
@@ -167,14 +178,20 @@ main {
 /* Mobile and small tablet optimization */
 @media (max-width: 600px) {
   .card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(3, 1fr); /* Force 3 per row */
+    gap: 2px; /* Reduce space between cards */
   }
 
   .card-container {
-    max-width: 140px;
+    max-width: 100%; /* Ensure it fits within the new layout */
+  }
+
+  .card {
+    height: auto; /* Let it resize proportionally if needed */
+    max-height: 220px;
   }
 }
+
 
 /* Zoomed card size on mobile */
 @media (max-width: 700px) {
