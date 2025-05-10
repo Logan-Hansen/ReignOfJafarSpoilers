@@ -92,11 +92,6 @@ function createBonusCard(index) {
   container.classList.add("card-container");
   container.appendChild(img);
 
-  const label = document.createElement("div");
-  label.classList.add("card-label");
-  label.textContent = `Bonus ${id}`;
-  container.appendChild(label);
-
   bonusGrid.appendChild(container);
 
   img.onerror = () => {
