@@ -130,7 +130,7 @@ function closeZoom() {
   hideZoomNavigation();
 }
 
-function createCard(cardNum, revealed = true) {
+function createCard(cardNum) {
   const img = document.createElement("img");
   img.dataset.cardNum = cardNum;
   img.loading = "lazy";
@@ -146,27 +146,24 @@ function createCard(cardNum, revealed = true) {
   label.textContent = cardNum;
   container.appendChild(label);
 
-  if (!revealed && !showMissing) {
+  const quality = manifest.revealed[cardNum]; // "high", "low", or undefined
+  const isRevealed = quality === "high" || quality === "low";
+
+  if (!isRevealed && !showMissing) {
     container.style.display = "none";
   }
 
-  if (revealed) {
+  if (isRevealed) {
     revealedCards.push(container);
+    const path = quality === "low"
+      ? `cards/lowRes/${cardNum}.png?v=${cacheBuster}`
+      : `cards/${cardNum}.png?v=${cacheBuster}`;
+    img.src = path;
+  } else {
+    img.src = "LorcanaCardBack.png";
   }
 
-  // Load high-res first, fall back to lowRes
-  const highResSrc = `cards/${cardNum}.png?v=${cacheBuster}`;
-  const lowResSrc = `cards/lowRes/${cardNum}.png?v=${cacheBuster}`;
-
-  img.src = revealed ? highResSrc : "LorcanaCardBack.png";
-  if (revealed) {
-    img.onerror = () => {
-      img.src = lowResSrc;
-      img.onerror = null; // prevent infinite fallback loop
-    };
-  }
-
-  img.addEventListener("click", e => {
+  img.addEventListener("click", (e) => {
     e.stopPropagation();
     const index = revealedCards.findIndex(c => c.contains(img));
     if (index !== -1) {
@@ -178,32 +175,41 @@ function createCard(cardNum, revealed = true) {
 }
 
 
+
+
 function createBonusCard(bonusNum) {
   const filename = `bonus_${bonusNum}.png`;
   const img = document.createElement("img");
   img.loading = "lazy";
   img.src = `cards/bonus/${filename}?v=${cacheBuster}`;
-  img.alt = "Bonus Card";
+  img.alt = `Bonus Card ${bonusNum}`;
   img.classList.add("card");
 
   const container = document.createElement("div");
   container.classList.add("card-container");
   container.appendChild(img);
-  bonusGrid.appendChild(container);
-  revealedCards.push(container);
+
+  const label = document.createElement("div");
+  label.classList.add("card-label");
+  label.textContent = `Bonus ${bonusNum}`;
+  container.appendChild(label);
 
   img.onerror = () => {
-    container.remove();
+    container.remove(); // Remove if the image doesn't load
   };
 
-  img.addEventListener("click", e => {
+  img.addEventListener("click", (e) => {
     e.stopPropagation();
     const index = revealedCards.findIndex(c => c.contains(img));
     if (index !== -1) {
       zoomToCard(index);
     }
   });
+
+  return container;
 }
+
+
 
 function loadFromManifest() {
   grid.innerHTML = "";
@@ -211,12 +217,12 @@ function loadFromManifest() {
   loadingIndicator.classList.remove("hidden");
 
   const frag = document.createDocumentFragment();
-  const revealedSet = new Set(manifest.revealed);
+  const revealed = manifest.revealed;
 
-  for (let i = 1; i <= totalCards; i++) {
-    const cardNum = i.toString().padStart(3, "0");
-    const isRevealed = revealedSet.has(cardNum);
-    const container = createCard(cardNum, isRevealed);
+  const sortedKeys = Object.keys(revealed).sort(); // "001", "002", etc.
+
+  for (const cardNum of sortedKeys) {
+    const container = createCard(cardNum); // no need for isRevealed boolean
     frag.appendChild(container);
   }
 
@@ -226,10 +232,14 @@ function loadFromManifest() {
 
 function loadBonusCards() {
   bonusGrid.innerHTML = "";
+
   manifest.bonus.forEach(bonusNum => {
-    createBonusCard(bonusNum);
+    const container = createBonusCard(bonusNum);
+    bonusGrid.appendChild(container);
+    revealedCards.push(container); // include in zoom navigation
   });
 }
+
 
 function toggleMissing() {
   showMissing = !showMissing;
