@@ -11,6 +11,8 @@ body {
 
 body.no-scroll {
   overflow: hidden;
+  position: fixed;
+  width: 100%;
 }
 
 html {
@@ -171,12 +173,11 @@ main {
   display: none;
 }
 
-/* When body.zoom-controls is active, show buttons */
 body.show-controls .zoom-controls {
   display: flex;
 }
 
-@media (min-width: 701px) {
+@media (min-width: 1025px) {
   #prevBtn {
     position: fixed;
     top: 50%;
@@ -197,20 +198,7 @@ body.show-controls .zoom-controls {
   }
 }
 
-/* Tablet layout */
-@media (max-width: 900px) {
-  .card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 5px;
-  }
-
-  .card-container {
-    max-width: 160px;
-  }
-}
-
-/* Mobile layout */
-@media (max-width: 700px) {
+@media (max-width: 1024px) {
   .card-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 2px;

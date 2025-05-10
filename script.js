@@ -1,3 +1,4 @@
+// Full updated script with all functionality restored and improved mobile behavior
 const grid = document.getElementById("cardGrid");
 const bonusGrid = document.getElementById("bonusGrid");
 const toggleBtn = document.getElementById("toggleRevealed");
@@ -13,13 +14,11 @@ let cacheBuster = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
 let revealedCards = [];
 let currentZoomIndex = -1;
 let lastZoomTime = 0;
-const zoomCooldown = 200; // milliseconds between allowed transitions
-
+const zoomCooldown = 200;
 
 let manifest = { revealed: [], bonus: [] };
-const totalCards = 204; // still used to detect missing slots
+const totalCards = 204;
 
-// "Refresh Card Images" button
 const refreshBtn = document.createElement("button");
 refreshBtn.textContent = "Refresh Card Images";
 refreshBtn.id = "refreshImagesBtn";
@@ -36,9 +35,14 @@ function closeZoom() {
     zoomedClone.remove();
     zoomedClone = null;
   }
-  document.body.classList.remove("no-scroll");
+  document.body.classList.remove("no-scroll", "show-controls");
   overlay.style.display = "none";
+  overlay.removeEventListener("touchmove", preventTouchScroll);
   hideZoomNavigation();
+}
+
+function preventTouchScroll(e) {
+  e.preventDefault();
 }
 
 function showZoomNavigation() {
@@ -53,7 +57,6 @@ function showZoomNavigation() {
   } else {
     nextBtn.style.display = "none";
   }
-
 }
 
 function hideZoomNavigation() {
@@ -77,8 +80,9 @@ function zoomToCard(index) {
   });
 
   document.body.appendChild(zoomedClone);
-  document.body.classList.add("no-scroll");
+  document.body.classList.add("no-scroll", "show-controls");
   overlay.style.display = "block";
+  overlay.addEventListener("touchmove", preventTouchScroll, { passive: false });
   currentZoomIndex = index;
   showZoomNavigation();
 }
@@ -87,9 +91,7 @@ function createCard(cardNum, revealed = true) {
   const img = document.createElement("img");
   img.dataset.cardNum = cardNum;
   img.loading = "lazy";
-  img.src = revealed
-    ? `cards/${cardNum}.png?v=${cacheBuster}`
-    : "LorcanaCardBack.png";
+  img.src = revealed ? `cards/${cardNum}.png?v=${cacheBuster}` : "LorcanaCardBack.png";
   img.alt = `Card ${cardNum}`;
   img.classList.add("card");
 
@@ -123,7 +125,6 @@ function createCard(cardNum, revealed = true) {
 
 function createBonusCard(bonusNum) {
   const filename = `bonus_${bonusNum}.png`;
-
   const img = document.createElement("img");
   img.loading = "lazy";
   img.src = `cards/bonus/${filename}?v=${cacheBuster}`;
@@ -133,9 +134,8 @@ function createBonusCard(bonusNum) {
   const container = document.createElement("div");
   container.classList.add("card-container");
   container.appendChild(img);
-
   bonusGrid.appendChild(container);
-  revealedCards.push(container); // 🔁 Add to navigation list
+  revealedCards.push(container);
 
   img.onerror = () => {
     container.remove();
@@ -150,15 +150,14 @@ function createBonusCard(bonusNum) {
   });
 }
 
-
 function loadFromManifest() {
   grid.innerHTML = "";
   revealedCards = [];
   loadingIndicator.classList.remove("hidden");
 
   const frag = document.createDocumentFragment();
-
   const revealedSet = new Set(manifest.revealed);
+
   for (let i = 1; i <= totalCards; i++) {
     const cardNum = i.toString().padStart(3, "0");
     const isRevealed = revealedSet.has(cardNum);
@@ -179,10 +178,7 @@ function loadBonusCards() {
 
 function toggleMissing() {
   showMissing = !showMissing;
-  toggleBtn.textContent = showMissing
-    ? "Hide Missing Card Slots"
-    : "Show Missing Card Slots";
-
+  toggleBtn.textContent = showMissing ? "Hide Missing Card Slots" : "Show Missing Card Slots";
   document.querySelectorAll(".card-container").forEach(container => {
     const card = container.querySelector(".card");
     const isBack = card.src.includes("LorcanaCardBack.png");
@@ -190,11 +186,9 @@ function toggleMissing() {
   });
 }
 
-// Toggle button
 toggleBtn.textContent = "Show Missing Card Slots";
 toggleBtn.addEventListener("click", toggleMissing);
 
-// Zoom nav buttons
 prevBtn.addEventListener("click", e => {
   e.stopPropagation();
   zoomToCard(currentZoomIndex - 1);
@@ -205,7 +199,6 @@ nextBtn.addEventListener("click", e => {
   zoomToCard(currentZoomIndex + 1);
 });
 
-// Arrow key navigation
 document.addEventListener("keydown", e => {
   if (!zoomedClone) return;
   if (e.key === "ArrowLeft") {
@@ -217,15 +210,13 @@ document.addEventListener("keydown", e => {
   }
 });
 
-// Global click closes zoom
 document.addEventListener("click", closeZoom);
 
-// Load manifest and start
 fetch("manifest.json")
   .then(res => res.json())
   .then(data => {
     manifest = data;
     loadFromManifest();
     loadBonusCards();
-    toggleBtn.click(); // Default to revealed-only mode
+    toggleBtn.click();
   });
